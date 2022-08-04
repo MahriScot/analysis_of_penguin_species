@@ -1,0 +1,374 @@
+---
+title: "Penguins"
+subtitle: Statistics, Hypothesis testing, and correlation matrix
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+#### Outcomes covered in the below work 
+
+*For Statistics and Hypothesis Testing* 
+
+From Working with Data (J4Y6 35):
+
+* 4.1 Exploratory data analysis and targeted data analysis (hypothesis testing)
+* 4.3 Probability and probability distributions
+* 4.4 Summary statistics including measures of centrality, spread and skewness
+
+*For Correlation Matrix*
+
+* 4.5 Concept of correlation and correlation matrices
+* 4.8 Documenting analyses
+
+<hr>
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(e1071)
+library(infer)
+library(GGally)
+```
+
+We are interested in how bill length differ between the three species of penguin 
+(Adelie, Chinstrap & Gentoo) in this dataset.
+
+```{r}
+# install.packages("palmerpenguins")
+penguins <- palmerpenguins::penguins 
+glimpse(penguins)
+```
+
+
+## 1. Exploratory analysis
+
+We are interested in comparing bill length among species:
+```{r}
+penguin_species_grouped <- penguins %>%
+  drop_na(bill_length_mm) %>% 
+  group_by(species)
+penguin_species_grouped %>% 
+  summarise(count = n())
+# Adelie: 151   Chinstrap: 68   Gentoo: 123	
+```
+
+### 4.1 Exploratory data analysis and targeted data analysis (hypothesis testing)
+
+Comparing and visualising differences in each species mean bill length:
+```{r}
+species_mean_bill_length <- penguin_species_grouped %>% 
+  select(species, bill_length_mm) %>% 
+  summarise(mean_bill_length = round(mean(bill_length_mm))) 
+# Adelie: 39 (38.79139)    Chinstrap: 49 (48.83382)   Gentoo: 48 (47.50488)
+
+species_mean_bill_length %>% 
+  ggplot()+
+  aes(x= species, y = mean_bill_length, fill = species) +
+  geom_col(stat = "identity")+
+  geom_text(aes(label = mean_bill_length), vjust = -0.25) +
+  labs(
+    x = "Species", 
+    y = "Mean Bill Length (mm)", 
+    title = "Comparison of mean bill lengths among penguin species", 
+    fill = "Species"
+  )
+```
+The comparison of species bill length means shows that although Chinstrap and 
+Gentoo penguins have similar average bill lengths (49mm and 48mm respectively), 
+the Adelie penguin's have a lower average bill length of around 39mm. 
+
+
+### 4.1 Exploratory data analysis and targeted data analysis (hypothesis testing)
+
+However, to better understand each species, we can visualise with a histogram 
+and boxplot for bill length for each species:
+```{r}
+# Quartiles and interquartile range: 
+penguin_species_grouped %>% 
+  summarise(
+    Q1 = quantile(bill_length_mm, 0.25),
+    Q2 = quantile(bill_length_mm, 0.5),
+    Q3 = quantile(bill_length_mm, 0.75),
+    IQR = Q3 - Q1
+  )
+
+# Boxplot of all bill lengths by species:
+penguin_species_grouped %>% 
+  ggplot() +
+  aes(x = bill_length_mm, y = species, fill = species) +
+  geom_boxplot() + 
+  labs(
+    x = "Bill lengths (mm)", 
+    y = "Species", 
+    title = "Comparison of bill lengths amongst species of penguin",
+    fill = "Species"
+  ) 
+
+# Histogram showing number of birds with each bill length per species 
+penguin_species_grouped %>%
+  ggplot(aes(x = bill_length_mm, fill = species)) +
+  geom_histogram(col = "white", bins = 30) +
+  facet_wrap(~ species) + 
+  labs(x = "Bill length (mm)", 
+       y = "Number of birds with each length", 
+       title = "Number of penguins with each recorded bill length", 
+       fill = "Species")
+```
+The boxplot of all bill lenghts amongst species of penguin shows a similar story 
+to the analysis of the mean bill lengths. Chinstrap and Gentoo have similar 
+median bill lengths (49.6mm and 47.3mm respectfully), and Adelie penguins have a 
+lower median length (38.8mm).
+
+They all have quite a similar interquartile ranges of between 4 and 5mm (50% of 
+all the penguins bill lengths in each species fall within 4 or 5mm of each 
+other).
+
+Though the histograms show a *fairly* normal distribution, the arguement for a 
+slight bimodal distribution could be made especially with Chinstrap penguins. 
+Further, Gentoos appear to be slightly right skewed, probably the result of an 
+outlier.
+
+It may be important to note that there were far more Adelie (n = 151) and Gentoo 
+(n = 123) penguins recorded than Chinstrap penguins (n = 68).
+
+
+
+
+## 2. Summary statistics
+
+### 4.4 Summary statistics including measures of centrality, spread and skewness
+
+```{r}
+# Measures of centrality (mean and median) and spread (standard deviation)
+penguin_species_grouped %>% 
+  summarise(mean_bill_length = mean(bill_length_mm), 
+            median_bill_length = median(bill_length_mm), 
+            standard_deviation_bill_length = sd(bill_length_mm))
+```
+
+```{r}
+#  Skewness using the e1071 package
+#library(e1071)
+penguin_species_grouped %>%
+  summarise(skewness = skewness(bill_length_mm, type = 1))
+# Adelie: 0.16    Chinstrap: -0.09    Gentoo: 0.64
+```
+
+The comparison of species bill length measures of centrality shows that 
+Chinstrap and Gentoo penguins have similar mean and median values. Chinstrap 
+bills have an average length of 48.83mm with their median recorded as 49.55mm,
+and Gentoo bill lengths are 47.50mm on average with a median value of 47.30mm. 
+Adelie penguin average bill lengths are shorter, recorded as 38.79mm, with a 
+median value of 38.80mm. 
+
+Each species show slightly different standard deviations. Chinstrap penguin
+records differ most, on average, from their mean value with SD = 3.34. Gentoos 
+standard deviation is SD = 3.08, and Adelie penguin bill lengths, on average, 
+differ least from their mean value with a SD = 2.66. 
+
+Both Adelie (0.16) and Gentoo (0.64) penguins show a positive (right) skew, and 
+Chinstrap penguins show a very slight negative (left) skew (-0.08). As none of 
+these values are greater than 1, this indicates that the distributions are not
+highly skewed. 
+
+
+
+
+
+## 3. Hypothesis test & probability
+
+Perform a suitable hypothesis test to check whether the mean bill length of 
+Gentoo is significantly longer than the mean bill length of Adelie.
+
+### 4.1 Exploratory data analysis and targeted data analysis (hypothesis testing)
+
+### -AND-
+### 4.3 Probability and probability distributions
+
+```{r}
+#library(infer)
+```
+
+With a chosen significance level α = 0.05, if the final p-value is less than or
+equal to 0.05 (p ≤ 0.05), this will suggest that there is a 5% probability or 
+less that the observed differences were the result of sampling error (chance).
+
+We can conduct a one-tailed, independent samples test with the following 
+hypotheses:
+
+
+* H0: The mean bill length of the Gentoo penguin is not significantly longer 
+than that of the Adelie penguin. 
+
+$$ H0: μ_{bill\ length\ (Gentoo)} - μ_{bill\ length\ (Adelie)} <= 0$$
+
+
+* H1: The mean bill length of the Gentoo penguin is significantly longer than the 
+mean bill length of the Adeli penguin.
+
+$$ H0: μ_{bill\ length\ (Gentoo)} - μ_{bill\ length\ (Adelie)} > 0$$
+
+
+Visualising all bill lengths:
+```{r}
+# Filtering original dataset for the species we are interested in
+gentoo_and_adelie <- penguins %>% 
+  drop_na(bill_length_mm) %>% 
+  filter(species %in% c("Gentoo", "Adelie"))
+# Visualising both species' bill length with a boxplot:
+gentoo_and_adelie %>% 
+  ggplot(aes(x = bill_length_mm, y = species, fill = species)) +
+  geom_boxplot() +
+  labs(
+    x = "Bill length (mm)", 
+    y = "Species", 
+    title = "Comparison of bill lengths between penguin species", 
+    fill = "Species")
+```
+The overlap here appears to mostly be between the lower 25% of the Gentoo 
+penguins and the upper 25% of the Adelie penguins. 
+
+
+To see if there is an implication of species upon bill length or whether the 
+difference is down to sampling variation (chance), we can start by generating
+the null distribution by permutation:
+
+* Specify: it is the relationship between the bill length and the species we 
+  are testing. 
+  
+* Hypothesise: the null hypothesis is that there is no relationship, i.e. 
+  they are independent. 
+  
+* Generate: under the H0, there is no relationship between the two species and 
+  their bill lengths. So, using permutation, the "species" variable labels are 
+  shuffled (i.e.detaching the labels from rows and then randomly assigning them 
+  back to rows) so that any relationship between species and bill length is 
+  lost. In this case, this is repeated 5000 times to account for sampling 
+  variability so generates a distribution of 5000 samples. 
+
+* Calculate: checking the difference in the means. As the sample statistic is
+  the mean of Gentoo bill lengths minus the mean of Adelie bill lengths, so this 
+  is the order we specify them in in the calculation step. 
+  
+```{r}
+null_distribution_g_and_a <- gentoo_and_adelie %>% 
+  specify(bill_length_mm ~ species) %>%  
+  hypothesise(null = "independence") %>% 
+  generate(reps = 5000, type = "permute") %>% 
+  calculate(stat = "diff in means", order = c("Gentoo", "Adelie"))
+null_distribution_g_and_a
+```
+
+<br>
+Calculating the observed statistic and visualising the null distribution.
+* "Direction = "right"" is chosen due to this being a one-tailed test.
+* On the graph, the red line indicates where the observed statistic lies on the 
+distribution: 
+```{r}
+observed_stat_g_and_a <- gentoo_and_adelie %>% 
+  specify(bill_length_mm ~ species) %>%
+  calculate(stat = "diff in means", order = c("Gentoo", "Adelie"))
+observed_stat_g_and_a
+# 8.71
+null_distribution_g_and_a %>% 
+  visualise()+
+  shade_p_value(obs_stat = observed_stat_g_and_a, direction = "right")
+```
+
+From the visualisation, we can see that the observed statistic (red line) is far 
+to the right of our null distribution. There would therefore appear to be a very 
+small probability of getting a more extreme value than our observed statistic. 
+To be sure, the p-value should be calculated:
+
+```{r}
+p_value_g_and_a <- null_distribution_g_and_a %>% 
+  get_p_value(obs_stat = observed_stat_g_and_a, direction = "right")
+p_value_g_and_a
+# p = (close to) 0 
+format.pval(p_value_g_and_a)
+# p < 2.22e-16
+```
+If p ≤ 0.05 (the initially chosen significance level), this will suggest that 
+there is a 5% probability or less that the observed differences in mean lengths 
+of the two species of penguin's bills were the result of sampling error (random 
+chance).
+
+Here, p is close to 0 (p < 2.22e-16). 
+As p < 0.05 we are therefore able to reject the null hypothesis in favour of the 
+alternative hypothesis. 
+We can conclude that there is enough evidence within the data to suggest that 
+Gentoo penguin's bill lengths are statistically significantly longer than those 
+of the Adelie penguins. 
+
+<hr>
+
+
+
+## Correlation Matrix
+
+#### Outcomes covered by the below:
+
+* 4.5 Concept of correlation and correlation matrices
+* 4.8 Documenting analyses
+
+### Correlation matrix
+
+A correlation matrix that shows the correlation between bill length, bill depth, 
+flipper length, and body mass across species:
+
+```{r}
+#library(GGally)
+```
+
+Remember there are 2 that have NA under all records: 
+(Total of each = Adelie: 151   Chinstrap: 68   Gentoo: 123)
+
+```{r}
+penguins_correlation <- penguins %>% 
+  select(species, 
+         bill_length_mm, 
+         bill_depth_mm, 
+         flipper_length_mm, 
+         body_mass_g) %>% 
+  drop_na()
+```
+
+```{r}
+ggcorr(penguins_correlation, 
+       method = c("everything", "pearson"), 
+       hjust = 0.75, 
+       size = 4, 
+       layout.exp = 1,
+       legend.size = 10, 
+       label = TRUE, 
+       label_size = 4) +
+  labs(title = "Correlations across penguin species") 
+
+```
+It is first important to note that the data should be visualised before trusting 
+the correlation coefficients above. 
+
+The correlation matrix above shows that body mass and flipper length are the 
+most strongly correlated of all the relationships. As we can see a *very strong* 
+positive correlation (r = 0.9), it may be very likely that penguins with a 
+larger mass have longer flipper lengths. Further *strong*, positive, correlations 
+can be seen between body mass and bill length (r = 0.6) and between flipper 
+length and bill length (r = 0.7). 
+
+Negative correlations can also be seen here. There is a *weak* negative correlation 
+between bill depth and bill length (-0.2) meaning that as one decreases in size 
+the other may increase. A *moderate* negative correlation can be seen 
+between body mass and bill depth (r = -0.5) again meaning that as one decreases 
+the other may increase. Finally, a *strong* negative correlation can be 
+seen between flipper length and bill depth (r = -0.6) meaning that penguins with 
+longer flippers may be more likely to have shorter bill depths and vice versa. 
+
+Therefore, (to take one example) it may be the case that the larger the mass 
+of a penguin, the longer the flipper length and bill length, but the shorter the 
+bill depth.  
+
+

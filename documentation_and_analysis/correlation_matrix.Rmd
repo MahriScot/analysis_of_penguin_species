@@ -1,0 +1,84 @@
+---
+title: "Penguins - Correlation Matrix"
+output:
+  html_document:
+    df_print: paged
+---
+
+#### Outcomes covered in the below work 
+
+* 4.5 Concept of correlation and correlation matrices
+* 4.8 Documenting analyses
+
+<hr>
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(GGally)
+```
+
+
+```{r}
+# install.packages("palmerpenguins")
+penguins <- palmerpenguins::penguins 
+glimpse(penguins)
+```
+
+
+### The correlation matrix
+
+A correlation matrix that shows the correlation between bill length, bill depth, 
+flipper length, and body mass across species:
+
+(Total of each = Adelie: 151, Chinstrap: 68, Gentoo: 123)
+
+```{r}
+# selecting appropriate columns and dropping the 2 penguins with NA under all 
+# of their records 
+penguins_correlation <- penguins %>% 
+  select(species, 
+         bill_length_mm, 
+         bill_depth_mm, 
+         flipper_length_mm, 
+         body_mass_g) %>% 
+  drop_na()
+```
+
+```{r}
+ggcorr(penguins_correlation, 
+       method = c("everything", "pearson"), 
+       hjust = 0.75, 
+       size = 4, 
+       layout.exp = 1,
+       legend.size = 10, 
+       label = TRUE, 
+       label_size = 4) +
+  labs(title = "Correlations across penguin species") 
+
+```
+
+It is first important to note that the data should be visualised before trusting 
+the correlation coefficients above. 
+
+The correlation matrix above shows that body mass and flipper length are the 
+most strongly correlated of all the relationships. As we can see a *very strong* 
+positive correlation (r = 0.9), it may be very likely that penguins with a 
+larger mass have longer flipper lengths. Further *strong*, positive, correlations 
+can be seen between body mass and bill length (r = 0.6) and between flipper 
+length and bill length (r = 0.7). 
+
+Negative correlations can also be seen here. There is a *weak* negative correlation 
+between bill depth and bill length (-0.2) meaning that as one decreases in size 
+the other may increase. A *moderate* negative correlation can be seen 
+between body mass and bill depth (r = -0.5) again meaning that as one decreases 
+the other may increase. Finally, a *strong* negative correlation can be 
+seen between flipper length and bill depth (r = -0.6) meaning that penguins with 
+longer flippers may be more likely to have shorter bill depths and vice versa. 
+
+Therefore, (to take one example) it may be the case that the larger the mass 
+of a penguin, the longer the flipper length and bill length, but the shorter the 
+bill depth. 
+
+
