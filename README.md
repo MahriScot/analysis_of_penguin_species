@@ -90,18 +90,3 @@ Finally, a correlation matrix was created using Pearson's correlation coefficien
 and the original data set. It shows the correlations between bill length, bill 
 depth, flipper length, and body mass across species. 
 
-
-### Outcomes covered by the above: 
-
-For Statistics and Hypothesis Testing:
-
-  *From Working with Data (J4Y6 35):*
-
-  * 4.1 Exploratory data analysis and targeted data analysis (hypothesis testing)
-  * 4.3 Probability and probability distributions
-  * 4.4 Summary statistics including measures of centrality, spread and skewness
-
-For Correlation Matrix:
-
-  * 4.5 Concept of correlation and correlation matrices
-  * 4.8 Documenting analyses
